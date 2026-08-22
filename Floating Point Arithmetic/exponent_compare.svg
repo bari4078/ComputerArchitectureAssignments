@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 722 351">
+   <polyline fill="none" points="327,25 497,25" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="297,35 177,35 177,125" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="407,315 447,315" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="477,305 517,305" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="147,255 177,255 177,125 237,125" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="257,145 417,145" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="3.0"/>
+   <polyline fill="none" points="347,305 367,305" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="167,105 237,105" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="297,215 427,215 427,295 447,295" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="147,135 167,135 167,105 167,15 297,15" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <polyline fill="none" points="277,115 297,115 297,215 297,325 367,325" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="4.0"/>
+   <circle cx="297.0" cy="215.0" fill="rgb(0, 0, 0)" r="6.0" stroke="none" stroke-width="4.0"/>
+   <circle cx="417.0" cy="145.0" fill="rgb(0, 0, 0)" r="5.0" stroke="none" stroke-width="4.0"/>
+   <circle cx="167.0" cy="105.0" fill="rgb(0, 0, 0)" r="6.0" stroke="none" stroke-width="4.0"/>
+   <circle cx="177.0" cy="125.0" fill="rgb(0, 0, 0)" r="6.0" stroke="none" stroke-width="4.0"/>
+   <circle cx="257.0" cy="145.0" fill="rgb(0, 0, 0)" r="5.0" stroke="none" stroke-width="4.0"/>
+   <rect fill="none" height="18" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0" width="48" x="99" y="127"/>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="12" x="116.0" y="142.0">x5</text>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="16" font-weight="bold" x="6.0" y="143.0">exponent_a</text>
+   <circle cx="147.0" cy="135.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <rect fill="none" height="18" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0" width="48" x="99" y="247"/>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="12" x="116.0" y="262.0">x5</text>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="16" font-weight="bold" x="5.0" y="263.0">exponent_b</text>
+   <circle cx="147.0" cy="255.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <text fill="rgb(0, 0, 0)" font-family="Monospaced" font-size="12" x="329.0" y="310.0">00</text>
+   <circle cx="347.0" cy="305.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <rect fill="none" height="18" rx="3.0" ry="3.0" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0" width="48" x="499" y="17"/>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="12" x="516.0" y="32.0">x5</text>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="16" font-weight="bold" x="549.0" y="33.0">current_big_exponent</text>
+   <circle cx="497.0" cy="25.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <circle cx="528.0" cy="146.0" fill="none" r="9.0" stroke="rgb(0, 0, 0)" stroke-width="2.0"/>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="12" x="521.0" y="152.0">x1</text>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="16" font-weight="bold" x="539.0" y="153.0">a_is_smaller</text>
+   <circle cx="517.0" cy="145.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <rect fill="none" height="18" rx="3.0" ry="3.0" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0" width="48" x="519" y="297"/>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="12" x="536.0" y="312.0">x5</text>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="16" font-weight="bold" x="569.0" y="313.0">abs_difference</text>
+   <circle cx="517.0" cy="305.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <polyline fill="none" points="307,41 307,45 307,75 417,75 417,145 517,145" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="3.0"/>
+   <circle cx="307.0" cy="35.0" fill="rgb(192, 192, 192)" r="3.0" stroke="none" stroke-width="1.0"/>
+   <text fill="rgb(128, 128, 128)" font-family="SansSerif" font-size="12" x="300.0" y="20.0">0</text>
+   <polygon fill="none" points="297,5 327,15 327,35 297,45" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0"/>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="12" x="299.0" y="32.0">MUX</text>
+   <circle cx="297.0" cy="15.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <circle cx="297.0" cy="35.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <circle cx="307.0" cy="45.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <circle cx="327.0" cy="25.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <polyline fill="none" points="457,321 457,325 457,345 257,345 257,145 257,135" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="3.0"/>
+   <circle cx="457.0" cy="315.0" fill="rgb(192, 192, 192)" r="3.0" stroke="none" stroke-width="1.0"/>
+   <text fill="rgb(128, 128, 128)" font-family="SansSerif" font-size="12" x="450.0" y="300.0">0</text>
+   <polygon fill="none" points="447,285 477,295 477,315 447,325" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0"/>
+   <text fill="rgb(0, 0, 0)" font-family="SansSerif" font-size="12" x="449.0" y="312.0">MUX</text>
+   <circle cx="447.0" cy="295.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <circle cx="447.0" cy="315.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <circle cx="457.0" cy="325.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <circle cx="477.0" cy="305.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="2.0"/>
+   <rect fill="none" height="40" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0" width="40" x="237" y="95"/>
+   <circle cx="237.0" cy="105.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <circle cx="237.0" cy="125.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <circle cx="277.0" cy="115.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <circle cx="257.0" cy="95.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <text fill="rgb(153, 153, 153)" font-family="SansSerif" font-size="12" x="248.0" y="111.0">b in</text>
+   <circle cx="257.0" cy="135.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <text fill="rgb(153, 153, 153)" font-family="SansSerif" font-size="12" x="244.0" y="132.0">b out</text>
+   <polyline fill="none" points="262,115 272,115" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0"/>
+   <rect fill="none" height="40" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0" width="40" x="367" y="295"/>
+   <circle cx="367.0" cy="305.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <circle cx="367.0" cy="325.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <circle cx="407.0" cy="315.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <circle cx="387.0" cy="295.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <text fill="rgb(153, 153, 153)" font-family="SansSerif" font-size="12" x="378.0" y="311.0">b in</text>
+   <circle cx="387.0" cy="335.0" fill="rgb(0, 0, 0)" r="2.0" stroke="none" stroke-width="1.0"/>
+   <text fill="rgb(153, 153, 153)" font-family="SansSerif" font-size="12" x="374.0" y="332.0">b out</text>
+   <polyline fill="none" points="392,315 402,315" stroke="rgb(0, 0, 0)" stroke-linecap="square" stroke-width="2.0"/>
+</svg>
