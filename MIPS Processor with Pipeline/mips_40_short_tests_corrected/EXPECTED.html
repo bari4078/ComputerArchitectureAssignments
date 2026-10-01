@@ -1,0 +1,624 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>40 corrected MIPS tests</title><style>body{margin:0;background:#f3f6fa;color:#172c40;font:16px/1.6 system-ui,sans-serif}main{max-width:1400px;margin:auto;padding:26px}h1{font-size:32px;line-height:1.2}h2{font-size:23px;line-height:1.35}a{color:#075da9}section,article{padding:22px;background:white;border:1px solid #d9e2ec;border-radius:9px;margin:20px 0}.important{border-left:5px solid #076a69}pre{padding:20px;background:#122739;color:#eff8ff;border-radius:7px;overflow:auto;font:15px/1.7 ui-monospace,monospace}code,.mono{font-family:ui-monospace,monospace}li{margin:9px 0}.scroll{overflow:auto}table{border-collapse:collapse;font-size:14px;width:100%}th,td{padding:10px;text-align:left;vertical-align:top;border-bottom:1px solid #dce4ed}th{background:#eaf0f6}.summary{min-width:1280px}.summary td:nth-child(8){min-width:270px}.events{min-width:650px}summary{cursor:pointer;font-weight:600;padding:8px 0}article{scroll-margin-top:20px}input{font:inherit;padding:11px;border:1px solid #9cafc1;border-radius:6px;width:min(90%,550px)}.caption{color:#455f75}.status{color:#166144;font-weight:600}@media print{body{background:white}main{padding:0}input{display:none}article{break-inside:avoid}pre{white-space:pre-wrap}.summary{min-width:0;font-size:9px}.summary td:nth-child(8){min-width:0}th,td{padding:3px}.scroll{overflow:visible}}</style></head><body><main id="top"><h1>40 corrected MIPS tests</h1><p class="caption">No infinite ending jumps. All executed control transfers are counted.</p><section class="important"><h2>What changed</h2>
+<p>Every ending <code>done: j done</code> has been removed and replaced with a harmless <code>addi $zero, $zero, 0</code>. Test IDs, coverage and final data expectations are preserved. Programs remain 10–15 physical lines each.</p>
+<p><strong>Every executed jump now appears in the redirect total. Nothing is excluded.</strong> The previous package counted only the body and excluded its infinite ending jumps. This revision removes that distinction.</p>
+<p>All 40 corrected programs were assembled with your uploaded Java assembler and run on your latest <code>MIPS(1).circ</code> in Logisim Evolution 4.1.0. Final values, actual stall counts, actual redirect counts and PC updates matched the reference results for every program.</p></section>
+<section><h2>Run each test this way</h2><ol>
+<li>Disable automatic ticking. <strong>Clear the instruction ROM to 0000</strong>, then load the assembled program. This removes leftover instructions from previous tests. After the source ends, cleared ROM words decode as <code>sll $zero, $zero, 0</code>, which has no data side effects.</li>
+<li>Reset the CPU: <strong>PC = 0, pipeline registers = 0, $t0…$t4 = 0, $zero = 0, $sp = 15</strong>. Start with clock low. Each test is independent.</li>
+<li>Run <strong>exactly 100 complete clock cycles</strong> and stop. A full cycle is one rising edge followed by one falling edge: 200 half-cycle transitions. These programs do not halt automatically. Do not keep running until the eight-bit PC wraps and executes the program again.</li>
+<li>Compare final registers and specified RAM locations. RAM need not be preloaded: every load reads a value its test has already stored. <strong>Unchanged</strong> means preserve the cell’s initial value, not necessarily zero. Initial $sp = 15 does not put 15 into MEM[15].</li>
+<li>Count stalls and redirects over <strong>all 100 cycles</strong>. There is no ending loop to subtract. In this setup all test work finishes before cycle 42; remaining cleared-ROM instructions have no stalls, redirects or data side effects.</li></ol></section>
+<section><h2>How counts and values are defined</h2>
+<p><strong>All values and addresses are decimal</strong> in this HTML and the CSV. Decimal 12 = hex C, 14 = hex E, 15 = hex F. PC values are instruction-word addresses starting at zero.</p>
+<p><strong>One stall</strong> means one rising edge at which the data-hazard signal holds PC/IF-ID and inserts an EX bubble. Two conflicting operands do not count twice. Filling/draining the pipeline and flushing a wrong-path instruction are not data stalls. The split columns distinguish load-use stalls from stalls of a branch waiting for data.</p>
+<p><strong>One redirect</strong> means one executed <code>j</code> or one resolved, taken <code>beq</code>/<code>bneq</code>. A branch held in ID is not counted until it resolves. Not-taken branches and flushed jumps do not redirect. Even a taken transfer whose target is the next instruction counts once: it still uses the redirect/flush path.</p>
+<p>Branches/jumps resolve in ID with no architectural delay slot. Adjacent load-to-store data uses MEM-to-MEM forwarding without a stall; a loaded store base needs one stall. An adjacent ALU-to-branch dependency needs one stall; an adjacent load-to-branch dependency needs two. These counts were measured on your circuit, not just inferred from instruction names.</p>
+<p>Arithmetic wraps to four bits. Memory uses an unsigned register base plus a signed four-bit offset. Logical shifts use the full four-bit shift amount; a shift by 4 or more gives zero. Stack and ordinary loads/stores share RAM.</p>
+<p>Tests 33, 34 and 39 intentionally contain <strong>finite loops</strong> to test backward transfers and repeated hazards. Each runs three iterations and exits. All other tests are acyclic.</p>
+<p>Event tables below show actual sampled cycles. Cycle 1 starts with the first rising clock edge after reset. They list each stall separately, each resolved branch decision, and each executed jump.</p>
+<p><a href="EXPECTED.csv">Open the common CSV</a></p></section><section><h2>Common results</h2><p>Stop every test after 100 full cycles. Values are decimal. Detailed instructions and events follow this table.</p><div class="scroll"><table class="summary"><thead><tr><th>Test</th><th>Coverage</th><th>Lines</th><th>Stalls</th><th>Redirects</th><th>Taken branches</th><th>Executed jumps</th><th>Final registers</th><th>Final RAM</th></tr></thead><tbody><tr><td><a href="#test1">01</a></td><td>Taken branch and jump flush; not-taken branch executes fall-through</td><td>11</td><td>0</td><td>2</td><td>1</td><td>1</td><td class="mono">$zero=0 · $t0=6 · $t1=0 · $t2=3 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[4]=6, MEM[5]=3</td></tr><tr><td><a href="#test2">02</a></td><td>Both ALU inputs from different forwarding stages</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=3 · $t2=3 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=3</td></tr><tr><td><a href="#test3">03</a></td><td>Both ALU inputs match the same destination</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=0 · $t2=12 · $t3=9 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=12, MEM[3]=9</td></tr><tr><td><a href="#test4">04</a></td><td>Repeated destination with newest-result priority</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=6 · $t2=0 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=6</td></tr><tr><td><a href="#test5">05</a></td><td>Producer WB overlaps consumer ID</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=0 · $t2=12 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=12</td></tr><tr><td><a href="#test6">06</a></td><td>AND, OR, NOR, ANDI and ORI with forwarding</td><td>14</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=3 · $t2=0 · $t3=5 · $t4=8 · $sp=15</td><td class="mono">MEM[2]=2, MEM[3]=7, MEM[4]=8, MEM[5]=0, MEM[6]=5</td></tr><tr><td><a href="#test7">07</a></td><td>Four-bit overflow, negative immediates and subtraction</td><td>15</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=8 · $t1=9 · $t2=1 · $t3=15 · $t4=8 · $sp=15</td><td class="mono">MEM[2]=14, MEM[3]=1, MEM[4]=15, MEM[5]=8, MEM[6]=8</td></tr><tr><td><a href="#test8">08</a></td><td>Logical shifts and shift-by-zero preserve results</td><td>15</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=1 · $t1=8 · $t2=4 · $t3=0 · $t4=1 · $sp=15</td><td class="mono">MEM[2]=8, MEM[3]=4, MEM[4]=8, MEM[5]=8, MEM[6]=0, MEM[7]=1</td></tr><tr><td><a href="#test9">09</a></td><td>Full four-bit shift amount, including 4 and 15</td><td>12</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=14 · $t1=0 · $t2=0 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=0, MEM[3]=0, MEM[4]=0, MEM[5]=0</td></tr><tr><td><a href="#test10">10</a></td><td>One load supplies both operands</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=12 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=12, MEM[7]=6</td></tr><tr><td><a href="#test11">11</a></td><td>Load-use with SLL</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=12 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=12, MEM[7]=6</td></tr><tr><td><a href="#test12">12</a></td><td>Load-use with SRL</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=3 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=3, MEM[7]=6</td></tr><tr><td><a href="#test13">13</a></td><td>Load-use with NOR</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=9 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=9, MEM[7]=6</td></tr><tr><td><a href="#test14">14</a></td><td>Store base and data forwarded from different stages</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=4 · $t1=6 · $t2=0 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[4]=6</td></tr><tr><td><a href="#test15">15</a></td><td>Two ALU writers compete for store data</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=3 · $t1=0 · $t2=0 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=3</td></tr><tr><td><a href="#test16">16</a></td><td>Adjacent load/store data bypass</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=0 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=6, MEM[7]=6</td></tr><tr><td><a href="#test17">17</a></td><td>One-instruction load/store gap</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=3 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=6, MEM[7]=6</td></tr><tr><td><a href="#test18">18</a></td><td>Loaded store address requires EX data</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=4 · $t1=6 · $t2=0 · $t3=0 · $t4=4 · $sp=15</td><td class="mono">MEM[4]=6, MEM[7]=4</td></tr><tr><td><a href="#test19">19</a></td><td>Loaded register supplies store address and data</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=4 · $t1=0 · $t2=0 · $t3=0 · $t4=4 · $sp=15</td><td class="mono">MEM[4]=4, MEM[7]=4</td></tr><tr><td><a href="#test20">20</a></td><td>One load supplies another load address</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=4 · $t1=6 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=6, MEM[4]=6, MEM[7]=4</td></tr><tr><td><a href="#test21">21</a></td><td>Taken branch or jump targets the immediately next instruction</td><td>11</td><td>1</td><td>3</td><td>2</td><td>1</td><td class="mono">$zero=0 · $t0=1 · $t1=2 · $t2=3 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=1, MEM[3]=2, MEM[4]=3</td></tr><tr><td><a href="#test22">22</a></td><td>Newer ALU writer overrides older load</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=3 · $t1=0 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=3, MEM[7]=6</td></tr><tr><td><a href="#test23">23</a></td><td>Consecutive loads to same destination before store</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=0 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=6, MEM[6]=2, MEM[7]=6</td></tr><tr><td><a href="#test24">24</a></td><td>Same-address store/load, with both read results retained</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=6 · $t2=7 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=7, MEM[3]=0, MEM[4]=0</td></tr><tr><td><a href="#test25">25</a></td><td>Zero destination excluded from forwarding and branches</td><td>13</td><td>0</td><td>1</td><td>1</td><td>0</td><td class="mono">$zero=0 · $t0=0 · $t1=0 · $t2=3 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=0, MEM[3]=3, MEM[7]=6</td></tr><tr><td><a href="#test26">26</a></td><td>Load destination overwritten without reading it: no false stalls</td><td>13</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=3 · $t1=0 · $t2=0 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=2, MEM[3]=0, MEM[4]=3, MEM[7]=6</td></tr><tr><td><a href="#test27">27</a></td><td>Taken branch immediately reads first ALU-produced operand</td><td>10</td><td>1</td><td>1</td><td>1</td><td>0</td><td class="mono">$zero=0 · $t0=3 · $t1=3 · $t2=1 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=1</td></tr><tr><td><a href="#test28">28</a></td><td>Not-taken branch immediately reads second ALU-produced operand</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=3 · $t1=2 · $t2=6 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=6</td></tr><tr><td><a href="#test29">29</a></td><td>Taken BEQ reads loaded first operand</td><td>11</td><td>2</td><td>1</td><td>1</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=6 · $t2=3 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=3, MEM[7]=6</td></tr><tr><td><a href="#test30">30</a></td><td>Unavailable newer load blocks older matching branch value</td><td>10</td><td>2</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=3 · $t1=6 · $t2=2 · $t3=0 · $t4=3 · $sp=15</td><td class="mono">MEM[2]=2, MEM[7]=3</td></tr><tr><td><a href="#test31">31</a></td><td>Branch must use newer ALU result instead of older load</td><td>11</td><td>1</td><td>1</td><td>1</td><td>0</td><td class="mono">$zero=0 · $t0=3 · $t1=3 · $t2=1 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=1, MEM[7]=6</td></tr><tr><td><a href="#test32">32</a></td><td>Consecutive loads to one branch source</td><td>13</td><td>2</td><td>1</td><td>1</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=6 · $t2=1 · $t3=0 · $t4=6 · $sp=15</td><td class="mono">MEM[2]=1, MEM[6]=2, MEM[7]=6</td></tr><tr><td><a href="#test33">33</a></td><td>Loop-exit instruction executes exactly once</td><td>10</td><td>3</td><td>2</td><td>2</td><td>0</td><td class="mono">$zero=0 · $t0=0 · $t1=6 · $t2=1 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=6, MEM[3]=1</td></tr><tr><td><a href="#test34">34</a></td><td>Forward and backward jumps with real fall-through work</td><td>13</td><td>3</td><td>4</td><td>1</td><td>3</td><td class="mono">$zero=0 · $t0=0 · $t1=6 · $t2=2 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=6, MEM[3]=2</td></tr><tr><td><a href="#test35">35</a></td><td>Two manual pushes and LIFO pops</td><td>14</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=6 · $t1=6 · $t2=3 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=6, MEM[3]=3, MEM[13]=6, MEM[14]=3</td></tr><tr><td><a href="#test36">36</a></td><td>Load SP immediately followed by store through SP</td><td>10</td><td>1</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=14 · $t1=6 · $t2=0 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[7]=14, MEM[14]=6</td></tr><tr><td><a href="#test37">37</a></td><td>Branch immediately compares loaded SP</td><td>11</td><td>2</td><td>1</td><td>1</td><td>0</td><td class="mono">$zero=0 · $t0=14 · $t1=1 · $t2=0 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=1, MEM[7]=14</td></tr><tr><td><a href="#test38">38</a></td><td>Negative offsets below the current stack pointer</td><td>12</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=2 · $t1=4 · $t2=6 · $t3=6 · $t4=2 · $sp=15</td><td class="mono">MEM[2]=6, MEM[3]=2, MEM[12]=6, MEM[13]=4, MEM[14]=2</td></tr><tr><td><a href="#test39">39</a></td><td>Manual push/pop loop with one preserved result per iteration</td><td>13</td><td>3</td><td>2</td><td>2</td><td>0</td><td class="mono">$zero=0 · $t0=0 · $t1=1 · $t2=1 · $t3=5 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=3, MEM[3]=2, MEM[4]=1, MEM[14]=1</td></tr><tr><td><a href="#test40">40</a></td><td>Save caller SP and local value, then restore SP with LW</td><td>13</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="mono">$zero=0 · $t0=15 · $t1=6 · $t2=6 · $t3=0 · $t4=0 · $sp=15</td><td class="mono">MEM[2]=15, MEM[3]=6, MEM[13]=6, MEM[14]=15</td></tr></tbody></table></div></section><label for="search">Find a test by number or topic</label><br><input type="search" id="search" placeholder="31, branch, stack…"><article id="test1" data-search="1 Taken branch and jump flush; not-taken branch executes fall-through">
+<h2>01. Taken branch and jump flush; not-taken branch executes fall-through</h2><p><a href="asm/01_taken_branch_and_jump_flush_not_taken_branch_executes_fall_throu.asm">Open assembly file</a> · 11 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 6
+sw $t0, 4($zero)
+beq $zero, $zero, taken
+sw $zero, 4($zero)
+taken: j landed
+addi $t1, $zero, 7
+landed: bneq $zero, $zero, finish
+addi $t2, $zero, 3
+finish: sw $t2, 5($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=0 · $t2=3 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[4]=6, MEM[5]=3. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 2</strong> (1 taken branches + 1 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>4</td><td>2</td><td>beq $zero, $zero, taken</td><td>taken branch: +1 redirect</td><td>4</td></tr><tr><td>6</td><td>4</td><td>j landed</td><td>jump: +1 redirect</td><td>6</td></tr><tr><td>8</td><td>6</td><td>bneq $zero, $zero, finish</td><td>not taken: no redirect</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test2" data-search="2 Both ALU inputs from different forwarding stages">
+<h2>02. Both ALU inputs from different forwarding stages</h2><p><a href="asm/02_both_alu_inputs_from_different_forwarding_stages.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 6
+addi $t1, $zero, 3
+sub $t2, $t0, $t1
+sw $t2, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=3 · $t2=3 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=3. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test3" data-search="3 Both ALU inputs match the same destination">
+<h2>03. Both ALU inputs match the same destination</h2><p><a href="asm/03_both_alu_inputs_match_the_same_destination.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 6
+add $t2, $t0, $t0
+sw $t2, 2($zero)
+nor $t3, $t0, $t0
+sw $t3, 3($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=0 · $t2=12 · $t3=9 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=12, MEM[3]=9. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test4" data-search="4 Repeated destination with newest-result priority">
+<h2>04. Repeated destination with newest-result priority</h2><p><a href="asm/04_repeated_destination_with_newest_result_priority.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 1
+addi $t0, $t0, 2
+addi $t0, $t0, 3
+sub $t1, $t0, $zero
+sw $t1, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=6 · $t2=0 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test5" data-search="5 Producer WB overlaps consumer ID">
+<h2>05. Producer WB overlaps consumer ID</h2><p><a href="asm/05_producer_wb_overlaps_consumer_id.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 6
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+add $t2, $t0, $t0
+sw $t2, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=0 · $t2=12 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=12. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test6" data-search="6 AND, OR, NOR, ANDI and ORI with forwarding">
+<h2>06. AND, OR, NOR, ANDI and ORI with forwarding</h2><p><a href="asm/06_and_or_nor_andi_and_ori_with_forwarding.asm">Open assembly file</a> · 14 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 6
+addi $t1, $zero, 3
+and $t2, $t0, $t1
+sw $t2, 2($zero)
+or $t3, $t0, $t1
+sw $t3, 3($zero)
+nor $t4, $t0, $t1
+sw $t4, 4($zero)
+andi $t2, $t4, 3
+sw $t2, 5($zero)
+ori $t3, $t2, 5
+sw $t3, 6($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=3 · $t2=0 · $t3=5 · $t4=8 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=2, MEM[3]=7, MEM[4]=8, MEM[5]=0, MEM[6]=5. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test7" data-search="7 Four-bit overflow, negative immediates and subtraction">
+<h2>07. Four-bit overflow, negative immediates and subtraction</h2><p><a href="asm/07_four_bit_overflow_negative_immediates_and_subtraction.asm">Open assembly file</a> · 15 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 7
+addi $t1, $zero, 7
+add $t2, $t0, $t1
+sw $t2, 2($zero)
+addi $t2, $t2, 3
+sw $t2, 3($zero)
+subi $t3, $zero, 1
+sw $t3, 4($zero)
+sub $t4, $t1, $t3
+sw $t4, 5($zero)
+addi $t0, $zero, -8
+sw $t0, 6($zero)
+subi $t1, $t0, -1
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=8 · $t1=9 · $t2=1 · $t3=15 · $t4=8 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=14, MEM[3]=1, MEM[4]=15, MEM[5]=8, MEM[6]=8. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test8" data-search="8 Logical shifts and shift-by-zero preserve results">
+<h2>08. Logical shifts and shift-by-zero preserve results</h2><p><a href="asm/08_logical_shifts_and_shift_by_zero_preserve_results.asm">Open assembly file</a> · 15 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 1
+sll $t1, $t0, 3
+sw $t1, 2($zero)
+srl $t2, $t1, 1
+sw $t2, 3($zero)
+sll $t3, $t1, 0
+sw $t3, 4($zero)
+srl $t4, $t3, 0
+sw $t4, 5($zero)
+sll $t3, $t1, 1
+sw $t3, 6($zero)
+srl $t4, $t1, 3
+sw $t4, 7($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=1 · $t1=8 · $t2=4 · $t3=0 · $t4=1 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=8, MEM[3]=4, MEM[4]=8, MEM[5]=8, MEM[6]=0, MEM[7]=1. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test9" data-search="9 Full four-bit shift amount, including 4 and 15">
+<h2>09. Full four-bit shift amount, including 4 and 15</h2><p><a href="asm/09_full_four_bit_shift_amount_including_4_and_15.asm">Open assembly file</a> · 12 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 7
+sll $t0, $t0, 1
+sll $t1, $t0, 4
+sw $t1, 2($zero)
+srl $t2, $t0, 4
+sw $t2, 3($zero)
+sll $t3, $t0, 15
+sw $t3, 4($zero)
+srl $t4, $t0, 15
+sw $t4, 5($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=14 · $t1=0 · $t2=0 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=0, MEM[3]=0, MEM[4]=0, MEM[5]=0. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test10" data-search="10 One load supplies both operands">
+<h2>10. One load supplies both operands</h2><p><a href="asm/10_one_load_supplies_both_operands.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+lw $t0, 7($zero)
+add $t1, $t0, $t0
+sw $t1, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=12 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=12, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>5</td><td>3</td><td>add $t1, $t0, $t0</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test11" data-search="11 Load-use with SLL">
+<h2>11. Load-use with SLL</h2><p><a href="asm/11_load_use_with_sll.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+lw $t0, 7($zero)
+sll $t1, $t0, 1
+sw $t1, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=12 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=12, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>5</td><td>3</td><td>sll $t1, $t0, 1</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test12" data-search="12 Load-use with SRL">
+<h2>12. Load-use with SRL</h2><p><a href="asm/12_load_use_with_srl.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+lw $t0, 7($zero)
+srl $t1, $t0, 1
+sw $t1, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=3 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=3, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>5</td><td>3</td><td>srl $t1, $t0, 1</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test13" data-search="13 Load-use with NOR">
+<h2>13. Load-use with NOR</h2><p><a href="asm/13_load_use_with_nor.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+lw $t0, 7($zero)
+nor $t1, $t0, $zero
+sw $t1, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=9 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=9, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>5</td><td>3</td><td>nor $t1, $t0, $zero</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test14" data-search="14 Store base and data forwarded from different stages">
+<h2>14. Store base and data forwarded from different stages</h2><p><a href="asm/14_store_base_and_data_forwarded_from_different_stages.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 4
+addi $t1, $zero, 6
+sw $t1, 0($t0)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=4 · $t1=6 · $t2=0 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[4]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test15" data-search="15 Two ALU writers compete for store data">
+<h2>15. Two ALU writers compete for store data</h2><p><a href="asm/15_two_alu_writers_compete_for_store_data.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 1
+addi $t0, $t0, 2
+sw $t0, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=3 · $t1=0 · $t2=0 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=3. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test16" data-search="16 Adjacent load/store data bypass">
+<h2>16. Adjacent load/store data bypass</h2><p><a href="asm/16_adjacent_load_store_data_bypass.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+addi $t0, $zero, 2
+lw $t0, 7($zero)
+sw $t0, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=0 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test17" data-search="17 One-instruction load/store gap">
+<h2>17. One-instruction load/store gap</h2><p><a href="asm/17_one_instruction_load_store_gap.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+addi $t0, $zero, 2
+lw $t0, 7($zero)
+addi $t1, $zero, 3
+sw $t0, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=3 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test18" data-search="18 Loaded store address requires EX data">
+<h2>18. Loaded store address requires EX data</h2><p><a href="asm/18_loaded_store_address_requires_ex_data.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 4
+sw $t4, 7($zero)
+addi $t0, $zero, 2
+addi $t1, $zero, 6
+lw $t0, 7($zero)
+sw $t1, 0($t0)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=4 · $t1=6 · $t2=0 · $t3=0 · $t4=4 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[4]=6, MEM[7]=4. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>7</td><td>5</td><td>sw $t1, 0($t0)</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test19" data-search="19 Loaded register supplies store address and data">
+<h2>19. Loaded register supplies store address and data</h2><p><a href="asm/19_loaded_register_supplies_store_address_and_data.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 4
+sw $t4, 7($zero)
+addi $t0, $zero, 2
+lw $t0, 7($zero)
+sw $t0, 0($t0)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=4 · $t1=0 · $t2=0 · $t3=0 · $t4=4 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[4]=4, MEM[7]=4. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>6</td><td>4</td><td>sw $t0, 0($t0)</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test20" data-search="20 One load supplies another load address">
+<h2>20. One load supplies another load address</h2><p><a href="asm/20_one_load_supplies_another_load_address.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 4
+sw $t4, 7($zero)
+addi $t4, $zero, 6
+sw $t4, 4($zero)
+addi $t0, $zero, 2
+lw $t0, 7($zero)
+lw $t1, 0($t0)
+sw $t1, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=4 · $t1=6 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6, MEM[4]=6, MEM[7]=4. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>8</td><td>6</td><td>lw $t1, 0($t0)</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test21" data-search="21 Taken branch or jump targets the immediately next instruction">
+<h2>21. Taken branch or jump targets the immediately next instruction</h2><p><a href="asm/21_taken_branch_or_jump_targets_the_immediately_next_instruction.asm">Open assembly file</a> · 11 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>beq $zero, $zero, next_one
+next_one: addi $t0, $t0, 1
+bneq $t0, $zero, next_two
+next_two: addi $t1, $t1, 2
+j next_three
+next_three: addi $t2, $t2, 3
+sw $t0, 2($zero)
+sw $t1, 3($zero)
+sw $t2, 4($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=1 · $t1=2 · $t2=3 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=1, MEM[3]=2, MEM[4]=3. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (0 load-use + 1 branch dependency). <strong>Redirects: 3</strong> (2 taken branches + 1 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>2</td><td>0</td><td>beq $zero, $zero, next_one</td><td>taken branch: +1 redirect</td><td>1</td></tr><tr><td>5</td><td>2</td><td>bneq $t0, $zero, next_two</td><td>branch stall</td><td>—</td></tr><tr><td>6</td><td>2</td><td>bneq $t0, $zero, next_two</td><td>taken branch: +1 redirect</td><td>3</td></tr><tr><td>9</td><td>4</td><td>j next_three</td><td>jump: +1 redirect</td><td>5</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test22" data-search="22 Newer ALU writer overrides older load">
+<h2>22. Newer ALU writer overrides older load</h2><p><a href="asm/22_newer_alu_writer_overrides_older_load.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+lw $t0, 7($zero)
+addi $t0, $zero, 3
+sw $t0, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=3 · $t1=0 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=3, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test23" data-search="23 Consecutive loads to same destination before store">
+<h2>23. Consecutive loads to same destination before store</h2><p><a href="asm/23_consecutive_loads_to_same_destination_before_store.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 2
+sw $t4, 6($zero)
+addi $t4, $zero, 6
+sw $t4, 7($zero)
+lw $t0, 6($zero)
+lw $t0, 7($zero)
+sw $t0, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=0 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6, MEM[6]=2, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test24" data-search="24 Same-address store/load, with both read results retained">
+<h2>24. Same-address store/load, with both read results retained</h2><p><a href="asm/24_same_address_store_load_with_both_read_results_retained.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 6
+sw $t0, 4($zero)
+lw $t1, 4($zero)
+addi $t2, $t1, 1
+sw $t2, 2($zero)
+sw $zero, 4($zero)
+lw $t3, 4($zero)
+sw $t3, 3($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=6 · $t2=7 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=7, MEM[3]=0, MEM[4]=0. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>5</td><td>3</td><td>addi $t2, $t1, 1</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test25" data-search="25 Zero destination excluded from forwarding and branches">
+<h2>25. Zero destination excluded from forwarding and branches</h2><p><a href="asm/25_zero_destination_excluded_from_forwarding_and_branches.asm">Open assembly file</a> · 13 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $zero, $zero, 6
+add $t0, $zero, $zero
+addi $t4, $zero, 6
+sw $t4, 7($zero)
+lw $zero, 7($zero)
+sw $zero, 2($zero)
+beq $zero, $zero, valid_zero
+addi $t1, $zero, 7
+valid_zero: bneq $zero, $zero, finish
+addi $t2, $zero, 3
+finish: sw $t2, 3($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=0 · $t1=0 · $t2=3 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=0, MEM[3]=3, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 1</strong> (1 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>8</td><td>6</td><td>beq $zero, $zero, valid_zero</td><td>taken branch: +1 redirect</td><td>8</td></tr><tr><td>10</td><td>8</td><td>bneq $zero, $zero, finish</td><td>not taken: no redirect</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test26" data-search="26 Load destination overwritten without reading it: no false stalls">
+<h2>26. Load destination overwritten without reading it: no false stalls</h2><p><a href="asm/26_load_destination_overwritten_without_reading_it_no_false_stalls.asm">Open assembly file</a> · 13 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+lw $t0, 7($zero)
+addi $t0, $zero, 2
+sw $t0, 2($zero)
+lw $t0, 7($zero)
+andi $t0, $zero, 7
+sw $t0, 3($zero)
+lw $t0, 7($zero)
+ori $t0, $zero, 3
+sw $t0, 4($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=3 · $t1=0 · $t2=0 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=2, MEM[3]=0, MEM[4]=3, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test27" data-search="27 Taken branch immediately reads first ALU-produced operand">
+<h2>27. Taken branch immediately reads first ALU-produced operand</h2><p><a href="asm/27_taken_branch_immediately_reads_first_alu_produced_operand.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t1, $zero, 3
+addi $t0, $zero, 0
+addi $t0, $zero, 3
+beq $t0, $t1, matched
+addi $t2, $zero, 7
+matched: addi $t2, $t2, 1
+sw $t2, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=3 · $t1=3 · $t2=1 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=1. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (0 load-use + 1 branch dependency). <strong>Redirects: 1</strong> (1 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>5</td><td>3</td><td>beq $t0, $t1, matched</td><td>branch stall</td><td>—</td></tr><tr><td>6</td><td>3</td><td>beq $t0, $t1, matched</td><td>taken branch: +1 redirect</td><td>5</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test28" data-search="28 Not-taken branch immediately reads second ALU-produced operand">
+<h2>28. Not-taken branch immediately reads second ALU-produced operand</h2><p><a href="asm/28_not_taken_branch_immediately_reads_second_alu_produced_operand.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 3
+addi $t1, $zero, 3
+addi $t1, $zero, 2
+beq $t0, $t1, finish
+addi $t2, $zero, 6
+finish: sw $t2, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=3 · $t1=2 · $t2=6 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (0 load-use + 1 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>5</td><td>3</td><td>beq $t0, $t1, finish</td><td>branch stall</td><td>—</td></tr><tr><td>6</td><td>3</td><td>beq $t0, $t1, finish</td><td>not taken: no redirect</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test29" data-search="29 Taken BEQ reads loaded first operand">
+<h2>29. Taken BEQ reads loaded first operand</h2><p><a href="asm/29_taken_beq_reads_loaded_first_operand.asm">Open assembly file</a> · 11 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+addi $t0, $zero, 1
+addi $t1, $zero, 6
+lw $t0, 7($zero)
+beq $t0, $t1, matched
+sw $zero, 7($zero)
+matched: addi $t2, $zero, 3
+sw $t2, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=6 · $t2=3 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=3, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 2</strong> (0 load-use + 2 branch dependency). <strong>Redirects: 1</strong> (1 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>7</td><td>5</td><td>beq $t0, $t1, matched</td><td>branch stall</td><td>—</td></tr><tr><td>8</td><td>5</td><td>beq $t0, $t1, matched</td><td>branch stall</td><td>—</td></tr><tr><td>9</td><td>5</td><td>beq $t0, $t1, matched</td><td>taken branch: +1 redirect</td><td>7</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test30" data-search="30 Unavailable newer load blocks older matching branch value">
+<h2>30. Unavailable newer load blocks older matching branch value</h2><p><a href="asm/30_unavailable_newer_load_blocks_older_matching_branch_value.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 3
+sw $t4, 7($zero)
+addi $t1, $zero, 6
+addi $t0, $zero, 6
+lw $t0, 7($zero)
+beq $t0, $t1, finish
+addi $t2, $zero, 2
+finish: sw $t2, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=3 · $t1=6 · $t2=2 · $t3=0 · $t4=3 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=2, MEM[7]=3. All other locations unchanged.</p>
+<p><strong>Stalls: 2</strong> (0 load-use + 2 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>7</td><td>5</td><td>beq $t0, $t1, finish</td><td>branch stall</td><td>—</td></tr><tr><td>8</td><td>5</td><td>beq $t0, $t1, finish</td><td>branch stall</td><td>—</td></tr><tr><td>9</td><td>5</td><td>beq $t0, $t1, finish</td><td>not taken: no redirect</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test31" data-search="31 Branch must use newer ALU result instead of older load">
+<h2>31. Branch must use newer ALU result instead of older load</h2><p><a href="asm/31_branch_must_use_newer_alu_result_instead_of_older_load.asm">Open assembly file</a> · 11 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 6
+sw $t4, 7($zero)
+addi $t1, $zero, 3
+lw $t0, 7($zero)
+addi $t0, $zero, 3
+beq $t0, $t1, matched
+addi $t2, $zero, 7
+matched: addi $t2, $t2, 1
+sw $t2, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=3 · $t1=3 · $t2=1 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=1, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (0 load-use + 1 branch dependency). <strong>Redirects: 1</strong> (1 taken branches + 0 executed jumps).</p>
+<p><strong>Test 31:</strong> the single redirect is the taken <code>beq</code> at PC 5. This corrected program contains no <code>j</code>.</p><details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>7</td><td>5</td><td>beq $t0, $t1, matched</td><td>branch stall</td><td>—</td></tr><tr><td>8</td><td>5</td><td>beq $t0, $t1, matched</td><td>taken branch: +1 redirect</td><td>7</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test32" data-search="32 Consecutive loads to one branch source">
+<h2>32. Consecutive loads to one branch source</h2><p><a href="asm/32_consecutive_loads_to_one_branch_source.asm">Open assembly file</a> · 13 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t4, $zero, 2
+sw $t4, 6($zero)
+addi $t4, $zero, 6
+sw $t4, 7($zero)
+addi $t1, $zero, 6
+lw $t0, 6($zero)
+lw $t0, 7($zero)
+beq $t0, $t1, matched
+addi $t2, $zero, 7
+matched: addi $t2, $t2, 1
+sw $t2, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=6 · $t2=1 · $t3=0 · $t4=6 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=1, MEM[6]=2, MEM[7]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 2</strong> (0 load-use + 2 branch dependency). <strong>Redirects: 1</strong> (1 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>9</td><td>7</td><td>beq $t0, $t1, matched</td><td>branch stall</td><td>—</td></tr><tr><td>10</td><td>7</td><td>beq $t0, $t1, matched</td><td>branch stall</td><td>—</td></tr><tr><td>11</td><td>7</td><td>beq $t0, $t1, matched</td><td>taken branch: +1 redirect</td><td>9</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test33" data-search="33 Loop-exit instruction executes exactly once">
+<h2>33. Loop-exit instruction executes exactly once</h2><p><a href="asm/33_loop_exit_instruction_executes_exactly_once.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 3
+loop: addi $t1, $t1, 2
+subi $t0, $t0, 1
+bneq $t0, $zero, loop
+addi $t2, $t2, 1
+sw $t1, 2($zero)
+sw $t2, 3($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=0 · $t1=6 · $t2=1 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6, MEM[3]=1. All other locations unchanged.</p>
+<p><strong>Stalls: 3</strong> (0 load-use + 3 branch dependency). <strong>Redirects: 2</strong> (2 taken branches + 0 executed jumps).</p>
+<p>This test has a finite three-iteration loop. It exits normally; there is no ending self-jump.</p><details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>5</td><td>3</td><td>bneq $t0, $zero, loop</td><td>branch stall</td><td>—</td></tr><tr><td>6</td><td>3</td><td>bneq $t0, $zero, loop</td><td>taken branch: +1 redirect</td><td>1</td></tr><tr><td>10</td><td>3</td><td>bneq $t0, $zero, loop</td><td>branch stall</td><td>—</td></tr><tr><td>11</td><td>3</td><td>bneq $t0, $zero, loop</td><td>taken branch: +1 redirect</td><td>1</td></tr><tr><td>15</td><td>3</td><td>bneq $t0, $zero, loop</td><td>branch stall</td><td>—</td></tr><tr><td>16</td><td>3</td><td>bneq $t0, $zero, loop</td><td>not taken: no redirect</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test34" data-search="34 Forward and backward jumps with real fall-through work">
+<h2>34. Forward and backward jumps with real fall-through work</h2><p><a href="asm/34_forward_and_backward_jumps_with_real_fall_through_work.asm">Open assembly file</a> · 13 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 3
+j loop
+addi $t2, $t2, 4
+loop: addi $t1, $t1, 2
+subi $t0, $t0, 1
+beq $t0, $zero, done_loop
+addi $t2, $t2, 1
+j loop
+addi $t2, $t2, 4
+done_loop: sw $t1, 2($zero)
+sw $t2, 3($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=0 · $t1=6 · $t2=2 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6, MEM[3]=2. All other locations unchanged.</p>
+<p><strong>Stalls: 3</strong> (0 load-use + 3 branch dependency). <strong>Redirects: 4</strong> (1 taken branches + 3 executed jumps).</p>
+<p>This test has a finite three-iteration loop. It exits normally; there is no ending self-jump.</p><details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>3</td><td>1</td><td>j loop</td><td>jump: +1 redirect</td><td>3</td></tr><tr><td>7</td><td>5</td><td>beq $t0, $zero, done_loop</td><td>branch stall</td><td>—</td></tr><tr><td>8</td><td>5</td><td>beq $t0, $zero, done_loop</td><td>not taken: no redirect</td><td>—</td></tr><tr><td>10</td><td>7</td><td>j loop</td><td>jump: +1 redirect</td><td>3</td></tr><tr><td>14</td><td>5</td><td>beq $t0, $zero, done_loop</td><td>branch stall</td><td>—</td></tr><tr><td>15</td><td>5</td><td>beq $t0, $zero, done_loop</td><td>not taken: no redirect</td><td>—</td></tr><tr><td>17</td><td>7</td><td>j loop</td><td>jump: +1 redirect</td><td>3</td></tr><tr><td>21</td><td>5</td><td>beq $t0, $zero, done_loop</td><td>branch stall</td><td>—</td></tr><tr><td>22</td><td>5</td><td>beq $t0, $zero, done_loop</td><td>taken branch: +1 redirect</td><td>9</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test35" data-search="35 Two manual pushes and LIFO pops">
+<h2>35. Two manual pushes and LIFO pops</h2><p><a href="asm/35_two_manual_pushes_and_lifo_pops.asm">Open assembly file</a> · 14 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 3
+subi $sp, $sp, 1
+sw $t0, 0($sp)
+addi $t0, $zero, 6
+subi $sp, $sp, 1
+sw $t0, 0($sp)
+lw $t1, 0($sp)
+addi $sp, $sp, 1
+lw $t2, 0($sp)
+addi $sp, $sp, 1
+sw $t1, 2($zero)
+sw $t2, 3($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=6 · $t1=6 · $t2=3 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6, MEM[3]=3, MEM[13]=6, MEM[14]=3. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test36" data-search="36 Load SP immediately followed by store through SP">
+<h2>36. Load SP immediately followed by store through SP</h2><p><a href="asm/36_load_sp_immediately_followed_by_store_through_sp.asm">Open assembly file</a> · 10 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 7
+addi $t0, $t0, 7
+sw $t0, 7($zero)
+addi $t1, $zero, 6
+lw $sp, 7($zero)
+sw $t1, 0($sp)
+addi $sp, $sp, 1
+addi $zero, $zero, 0
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=14 · $t1=6 · $t2=0 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[7]=14, MEM[14]=6. All other locations unchanged.</p>
+<p><strong>Stalls: 1</strong> (1 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>7</td><td>5</td><td>sw $t1, 0($sp)</td><td>load-use stall</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test37" data-search="37 Branch immediately compares loaded SP">
+<h2>37. Branch immediately compares loaded SP</h2><p><a href="asm/37_branch_immediately_compares_loaded_sp.asm">Open assembly file</a> · 11 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 7
+addi $t0, $t0, 7
+sw $t0, 7($zero)
+lw $sp, 7($zero)
+beq $sp, $t0, restored
+addi $t1, $zero, 7
+restored: addi $t1, $t1, 1
+addi $sp, $sp, 1
+sw $t1, 2($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=14 · $t1=1 · $t2=0 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=1, MEM[7]=14. All other locations unchanged.</p>
+<p><strong>Stalls: 2</strong> (0 load-use + 2 branch dependency). <strong>Redirects: 1</strong> (1 taken branches + 0 executed jumps).</p>
+<details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>6</td><td>4</td><td>beq $sp, $t0, restored</td><td>branch stall</td><td>—</td></tr><tr><td>7</td><td>4</td><td>beq $sp, $t0, restored</td><td>branch stall</td><td>—</td></tr><tr><td>8</td><td>4</td><td>beq $sp, $t0, restored</td><td>taken branch: +1 redirect</td><td>6</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test38" data-search="38 Negative offsets below the current stack pointer">
+<h2>38. Negative offsets below the current stack pointer</h2><p><a href="asm/38_negative_offsets_below_the_current_stack_pointer.asm">Open assembly file</a> · 12 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 2
+addi $t1, $zero, 4
+addi $t2, $zero, 6
+sw $t0, -1($sp)
+sw $t1, -2($sp)
+sw $t2, -3($sp)
+lw $t3, -3($sp)
+lw $t4, -1($sp)
+sw $t3, 2($zero)
+sw $t4, 3($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=2 · $t1=4 · $t2=6 · $t3=6 · $t4=2 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=6, MEM[3]=2, MEM[12]=6, MEM[13]=4, MEM[14]=2. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><article id="test39" data-search="39 Manual push/pop loop with one preserved result per iteration">
+<h2>39. Manual push/pop loop with one preserved result per iteration</h2><p><a href="asm/39_manual_push_pop_loop_with_one_preserved_result_per_iteration.asm">Open assembly file</a> · 13 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $zero, 3
+addi $t3, $zero, 2
+loop: subi $sp, $sp, 1
+sw $t0, 0($sp)
+lw $t1, 0($sp)
+addi $sp, $sp, 1
+sw $t1, 0($t3)
+addi $t3, $t3, 1
+subi $t0, $t0, 1
+bneq $t0, $zero, loop
+addi $t2, $t2, 1
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=0 · $t1=1 · $t2=1 · $t3=5 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=3, MEM[3]=2, MEM[4]=1, MEM[14]=1. All other locations unchanged.</p>
+<p><strong>Stalls: 3</strong> (0 load-use + 3 branch dependency). <strong>Redirects: 2</strong> (2 taken branches + 0 executed jumps).</p>
+<p>This test has a finite three-iteration loop. It exits normally; there is no ending self-jump.</p><details><summary>Cycle-by-cycle stall and control-transfer events</summary><div class="scroll"><table class="events"><thead><tr><th>Cycle</th><th>PC</th><th>Instruction in ID</th><th>Event</th><th>Target PC</th></tr></thead><tbody><tr><td>11</td><td>9</td><td>bneq $t0, $zero, loop</td><td>branch stall</td><td>—</td></tr><tr><td>12</td><td>9</td><td>bneq $t0, $zero, loop</td><td>taken branch: +1 redirect</td><td>2</td></tr><tr><td>21</td><td>9</td><td>bneq $t0, $zero, loop</td><td>branch stall</td><td>—</td></tr><tr><td>22</td><td>9</td><td>bneq $t0, $zero, loop</td><td>taken branch: +1 redirect</td><td>2</td></tr><tr><td>31</td><td>9</td><td>bneq $t0, $zero, loop</td><td>branch stall</td><td>—</td></tr><tr><td>32</td><td>9</td><td>bneq $t0, $zero, loop</td><td>not taken: no redirect</td><td>—</td></tr></tbody></table></div></details><p><a href="#top">Back to summary</a></p></article><article id="test40" data-search="40 Save caller SP and local value, then restore SP with LW">
+<h2>40. Save caller SP and local value, then restore SP with LW</h2><p><a href="asm/40_save_caller_sp_and_local_value_then_restore_sp_with_lw.asm">Open assembly file</a> · 13 lines · stop after <strong>100 full cycles</strong></p>
+<pre><code>addi $t0, $sp, 0
+subi $sp, $sp, 1
+sw $t0, 0($sp)
+subi $sp, $sp, 1
+addi $t1, $zero, 6
+sw $t1, 0($sp)
+lw $t2, 0($sp)
+addi $sp, $sp, 1
+lw $sp, 0($sp)
+sw $sp, 2($zero)
+sw $t2, 3($zero)
+addi $zero, $zero, 0
+addi $zero, $zero, 0</code></pre>
+<p class="mono"><strong>Final registers:</strong> $zero=0 · $t0=15 · $t1=6 · $t2=6 · $t3=0 · $t4=0 · $sp=15</p><p class="mono"><strong>Final RAM:</strong> MEM[2]=15, MEM[3]=6, MEM[13]=6, MEM[14]=15. All other locations unchanged.</p>
+<p><strong>Stalls: 0</strong> (0 load-use + 0 branch dependency). <strong>Redirects: 0</strong> (0 taken branches + 0 executed jumps).</p>
+<p>No data stalls or control transfers execute in this test.</p><p><a href="#top">Back to summary</a></p></article><script>document.getElementById('search').addEventListener('input',function(){let q=this.value.trim().toLowerCase();document.querySelectorAll('article').forEach(a=>a.hidden=!(a.dataset.search.toLowerCase().includes(q)||a.querySelector('h2').textContent.toLowerCase().includes(q)));});</script></main></body></html>
